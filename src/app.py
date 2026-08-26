@@ -11,18 +11,17 @@ mainwindow = QWidget()
 layout = QHBoxLayout()
 
 tdl1 = TDList("features","features.txt")
+lframe = ListFrame()
+lframe.addWidget(tdl1)
 menu = MainMenu()
-vbox = QVBoxLayout()
-title = Heading("Hello world")
-title.setFont(title.getBigFont())
 
-for btn in menu.buttonList:
-    vbox.addWidget(btn)
 
-layout.addLayout(vbox)
-layout.addWidget(tdl1)
-layout.addWidget(title)
+layout.addLayout(menu)
+layout.addLayout(lframe)
+
 mainwindow.setLayout(layout)
+
+
 
 mainwindow.show()
 app.exec()
