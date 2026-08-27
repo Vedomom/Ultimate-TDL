@@ -1,8 +1,12 @@
+import os
+import pathlib
+from PyQt6 import sip
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QGridLayout, QLineEdit ,
-                            QHBoxLayout, QVBoxLayout, QFrame, QCheckBox)
+                            QHBoxLayout, QVBoxLayout, QFrame, QCheckBox, QDialog, QDialogButtonBox)
 
+LIST_PATH = "./lists"
 
 class TDList(QPushButton):
     
@@ -26,20 +30,63 @@ class TDList(QPushButton):
     
 class MainMenu(QVBoxLayout):
     
-    def __init__(self):
+    def __init__(self, window : QWidget):
         super().__init__()
         
-        new_btn = TDButton("new")  
-        import_btn = TDButton("open")   
-        settings_btn = TDButton("settings")   
-        extra_btn = TDButton("extra")
-        self.buttonList = [new_btn, 
-                           import_btn,
-                           settings_btn,
-                           extra_btn]
+        self.window = window
+        self.new_btn = TDButton("new")  
+        self.import_btn = TDButton("open")   
+        self.settings_btn = TDButton("settings")   
+        self.extra_btn = TDButton("extra")
+        
+        self.new_btn.pressed.connect(self.creatList)
+        
+        
+        
+        self.buttonList = [self.new_btn, 
+                           self.import_btn,
+                           self.settings_btn,
+                           self.extra_btn]
         for b in self.buttonList:
             self.addWidget(b)
+        
+    def creatList(self):
+        self.dialog_CNL = CreatNewListDialog(self.window)
+        self.dialog_CNL.show()
+        self.dialog_CNL.exec()
 
+
+class CreatNewListDialog(QDialog):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        
+        self.mainframe = QVBoxLayout()
+        #line input for name
+        self.inputBox = QLineEdit(self)
+        
+        #button box
+        buttons = (QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttonBox = QDialogButtonBox(buttons)
+        
+        self.buttonBox.accepted.connect(self.createNew)
+        self.buttonBox.rejected.connect(self.reject)
+        self.inputBox.returnPressed.connect(self.createNew)
+        
+        self.mainframe.addWidget(self.inputBox, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.mainframe.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        self.setLayout(self.mainframe)
+        #creat txt file
+    
+    def createNew(self):
+        
+        if not os.path.exists(LIST_PATH):
+            os.mkdir(LIST_PATH)
+        
+        with open(f"{LIST_PATH}/{self.inputBox.text()}.txt", 'w'):
+            self.list = ListWindow(f"{LIST_PATH}/{self.inputBox.text()}.txt", self.inputBox.text())
+        
+        self.close()
 
 class Heading(QLabel):
     
@@ -78,28 +125,38 @@ class ListFrame(QVBoxLayout):
     def __init__(self):
         super().__init__()
         
-
+        self.setSpacing(1)
+        
+        self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
+        
+        for list in self.lists:
+            
+            tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}")
+            self.addWidget(tdl, alignment=Qt.AlignmentFlag.AlignHCenter)
 
 class ListWindow(QWidget):
     
     def __init__(self, path: str, title: str | None):
         super().__init__()
-        
-        print(path)
-        print(title)
+ 
+        self.path = path 
+        self.list_title = title
         
         if title is not None:
             self.title = Heading(title)
             self.title.setFont(self.title.getBigFont())
         
         self.taskbox = QVBoxLayout()
-        self.task_input = TaskInput(self.taskbox)
+        self.task_input = TaskInput()
+        
+        self.task_input.add_btn.pressed.connect(self.addTask)
+        self.task_input.returnPressed.connect(self.addTask)
         
         with open(path,'r') as tdl:
             tasklist = tdl.read().split("\n")       
             for task in tasklist:
-                if task is not '':
-                    self.taskbox.addLayout(Task(task, self.taskbox))         
+                if task != '':
+                    self.taskbox.addLayout(Task(task,self.path))         
         
         mainframe = QVBoxLayout()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -109,38 +166,42 @@ class ListWindow(QWidget):
         mainframe.setSpacing(20)
         
         self.setLayout(mainframe)
+        
+    def addTask(self):
+        if not self.task_input.text() == "" and not self.task_input.text() == " ":
+            task = Task(self.task_input.text(), self.path)
+            self.taskbox.addLayout(task)
+            
+            with open(self.path, "a") as listFile:
+                listFile.write(f"{task.text.text()}\n")
+                
+            
+            self.task_input.clear()
+        else:
+            return
 
 
 class TaskInput(QLineEdit):
-    def __init__(self, taskbox:QVBoxLayout):
+    def __init__(self):
         super().__init__()
         
         self.setPlaceholderText("Type a Task")
         self.add_btn = TDButton("add")
-        self.add_btn.pressed.connect(self.addTask)
-        self.returnPressed.connect(self.addTask)
-        self.taskbox = taskbox
         self.setFont(self.add_btn.getBigFont())
         
         self.taskInputFrame = QHBoxLayout()
         self.taskInputFrame.addWidget(self, alignment=Qt.AlignmentFlag.AlignRight)
         self.taskInputFrame.addWidget(self.add_btn, alignment=Qt.AlignmentFlag.AlignLeft)
     
-    
-    def addTask(self):
-        task = Task(self.text(), self.taskbox)
-        self.taskbox.addLayout(task)
-        self.clear()
-
 
 class Task(QHBoxLayout):
-    def __init__(self, text: str, taskbox: QVBoxLayout):
+    def __init__(self, text: str, path: str):
         super().__init__()
         
         self.text = QLabel(text)
         self.checkbox = QCheckBox()
         self.delete_btn = TDButton("X")
-        self.taskbox = taskbox
+        self.path = path
         
         self.checkbox.checkStateChanged.connect(self.checkTask)
         self.checkbox.setFont(self.getBigFont())
@@ -160,10 +221,19 @@ class Task(QHBoxLayout):
             self.text.setFont(self.getBigFont())
     
     def deleteTask(self):
-        self.text.hide()
-        self.checkbox.hide()
-        self.delete_btn.hide()
-        self.taskbox.removeItem(self)
+        
+        with open(self.path, "r") as listFile_R:
+            lines = listFile_R.readlines()
+            
+            with open(self.path, "w") as listFile_W:
+                for line in lines:
+                    if line.strip("\n") != self.text.text():
+                        listFile_W.write(line)
+        
+        self.text.deleteLater()
+        self.checkbox.deleteLater()
+        self.delete_btn.deleteLater()
+        sip.delete(self)
     
     def getGrayFont(self):
         font = QLabel().font()
@@ -178,4 +248,17 @@ class Task(QHBoxLayout):
         font.setWeight(600)
         return font
     
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
         
+        self.menu = MainMenu(self)
+        self.listbox = ListFrame()
+
+        self.mainframe = QHBoxLayout()
+        self.mainframe.addLayout(self.menu)
+        self.mainframe.addLayout(self.listbox)
+        
+        self.setLayout(self.mainframe)
+            
