@@ -1,5 +1,6 @@
 import os
 import pathlib
+import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
@@ -133,6 +134,19 @@ class ListFrame(QVBoxLayout):
             
             tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}")
             self.addWidget(tdl, alignment=Qt.AlignmentFlag.AlignHCenter)
+    
+    def refresh(self):
+        
+        for index in range(0, self.count()):
+            child = self.itemAt(index).widget() # type: ignore
+            child.deleteLater() # type: ignore
+        
+        self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
+        
+        for list in self.lists:
+            
+            tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}")
+            self.addWidget(tdl, alignment=Qt.AlignmentFlag.AlignHCenter)
 
 class ListWindow(QWidget):
     
@@ -148,9 +162,13 @@ class ListWindow(QWidget):
         
         self.taskbox = QVBoxLayout()
         self.task_input = TaskInput()
+        self.mixButton = TDButton("mix")
         
+        self.mixButton.pressed.connect(self.mixTasks)
         self.task_input.add_btn.pressed.connect(self.addTask)
         self.task_input.returnPressed.connect(self.addTask)
+        
+        self.task_input.taskInputFrame.addWidget(self.mixButton)
         
         with open(path,'r') as tdl:
             tasklist = tdl.read().split("\n")       
@@ -160,7 +178,6 @@ class ListWindow(QWidget):
         
         mainframe = QVBoxLayout()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignCenter)
-        #mainframe.addWidget(self.task_input, alignment=Qt.AlignmentFlag.AlignCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
         mainframe.setSpacing(20)
@@ -180,6 +197,17 @@ class ListWindow(QWidget):
         else:
             return
 
+    def mixTasks(self):
+        tasklist = [t for t in self.taskbox.children()]
+        
+        for t in self.taskbox.children():
+            self.taskbox.removeItem(t) #type:ignore
+            
+        for i in range(0, len(tasklist)):
+            t = random.choice(tasklist)
+            self.taskbox.addLayout(t) # type: ignore
+            tasklist.remove(t)
+            
 
 class TaskInput(QLineEdit):
     def __init__(self):
@@ -257,8 +285,25 @@ class MainWindow(QWidget):
         self.listbox = ListFrame()
 
         self.mainframe = QHBoxLayout()
+        self.listContainer = QVBoxLayout()
+        self.refreshHeader = QHBoxLayout()
+        
+        self.refreshButton = TDButton("refresh")
+        font = self.refreshButton.font()
+        font.setPointSize(10)
+        font.setWeight(400)
+        self.refreshButton.setFont(font)
+        self.refreshButton.pressed.connect(self.listbox.refresh)
+        self.listboxTitle = QLabel("Lists")
+        
+        self.refreshHeader.addWidget(self.listboxTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.refreshHeader.addWidget(self.refreshButton)
+        
+        self.listContainer.addLayout(self.refreshHeader)
+        self.listContainer.addLayout(self.listbox)
+        
         self.mainframe.addLayout(self.menu)
-        self.mainframe.addLayout(self.listbox)
+        self.mainframe.addLayout(self.listContainer)
         
         self.setLayout(self.mainframe)
             
