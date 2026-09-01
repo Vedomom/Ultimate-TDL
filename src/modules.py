@@ -4,8 +4,8 @@ import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QGridLayout, QLineEdit ,
-                            QHBoxLayout, QVBoxLayout, QFrame, QCheckBox, QDialog, QDialogButtonBox)
+from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit ,
+                            QHBoxLayout, QVBoxLayout, QFrame, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
 LIST_PATH = "./lists"
 
@@ -148,13 +148,20 @@ class ListFrame(QVBoxLayout):
             tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}")
             self.addWidget(tdl, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-class ListWindow(QWidget):
+class ListWindow(QMainWindow):
     
     def __init__(self, path: str, title: str | None):
         super().__init__()
- 
+
+        self.resize(400, 800)
+        
         self.path = path 
         self.list_title = title
+        
+        self.scrollarea = QScrollArea()
+        
+        self.widget = QWidget()
+        
         
         if title is not None:
             self.title = Heading(title)
@@ -182,7 +189,15 @@ class ListWindow(QWidget):
         mainframe.addLayout(self.taskbox)
         mainframe.setSpacing(20)
         
-        self.setLayout(mainframe)
+        self.widget.setLayout(mainframe)
+        
+        self.scrollarea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scrollarea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollarea.setWidgetResizable(True)
+        self.scrollarea.setWidget(self.widget)
+        
+        self.setCentralWidget(self.scrollarea)
+        
         
     def addTask(self):
         if not self.task_input.text() == "" and not self.task_input.text() == " ":
@@ -281,12 +296,17 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         
+        self.resize(800, 400)
+        
         self.menu = MainMenu(self)
         self.listbox = ListFrame()
 
         self.mainframe = QHBoxLayout()
         self.listContainer = QVBoxLayout()
         self.refreshHeader = QHBoxLayout()
+        
+        self.scrollbox = QScrollArea()
+        self.scrollwidget = QWidget()
         
         self.refreshButton = TDButton("refresh")
         font = self.refreshButton.font()
@@ -299,8 +319,15 @@ class MainWindow(QWidget):
         self.refreshHeader.addWidget(self.listboxTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.refreshHeader.addWidget(self.refreshButton)
         
+        
+        self.scrollwidget.setLayout(self.listbox)
+        self.scrollbox.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scrollbox.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollbox.setWidgetResizable(True)
+        self.scrollbox.setWidget(self.scrollwidget)
+        
         self.listContainer.addLayout(self.refreshHeader)
-        self.listContainer.addLayout(self.listbox)
+        self.listContainer.addWidget(self.scrollbox)
         
         self.mainframe.addLayout(self.menu)
         self.mainframe.addLayout(self.listContainer)
