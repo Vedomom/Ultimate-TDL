@@ -19,6 +19,7 @@ class TDList(QPushButton):
         self.setText(list_title)
         self.pressed.connect(self.openList)
         
+        self.setFont(self.getBigFont())
         #styling
     
     
@@ -27,6 +28,11 @@ class TDList(QPushButton):
         self.list_window = ListWindow(self.path, self.title)
         self.list_window.show()
     
+    def getBigFont(self):
+        font = QLabel().font()
+        font.setPointSize(20)
+        font.setWeight(500)
+        return font
     
     
 class MainMenu(QVBoxLayout):
