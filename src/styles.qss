@@ -1,3 +1,31 @@
 *{
-    background-color: grey;
+    font-family: Georgia;
 }
+
+QMainWindow, QWidget{
+    background-color: #252525;
+    color: mintcream;
+}
+
+QScrollArea{
+    border: 1px solid mintcream;
+
+}
+
+QPushButton{
+    border-radius: 1em;
+    border: 1px solid #ffb1dd;
+    padding: 0.5em 1.5em;
+}
+
+QPushButton:hover{
+    border-width: 1.5px;
+    color: #ffb1dd;
+}
+
+QPushButton:pressed{
+    border-width: 0.5px;
+    border-color: dodgerblue;
+    color: #d394b8;
+}
+

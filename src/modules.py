@@ -19,8 +19,8 @@ class TDList(QPushButton):
         self.setText(list_title)
         self.pressed.connect(self.openList)
         
-        self.setFont(self.getBigFont())
-        #styling
+        
+        self.setObjectName("TDL")
     
     
     def openList(self):
@@ -30,7 +30,7 @@ class TDList(QPushButton):
     
     def getBigFont(self):
         font = QLabel().font()
-        font.setPointSize(20)
+        font.setPointSize(15)
         font.setWeight(500)
         return font
     
@@ -56,6 +56,8 @@ class MainMenu(QVBoxLayout):
                            self.extra_btn]
         for b in self.buttonList:
             self.addWidget(b)
+            
+        self.setSpacing(2)
         
     def creatList(self):
         self.dialog_CNL = CreatNewListDialog(self.window)
@@ -140,6 +142,8 @@ class ListFrame(QVBoxLayout):
             
             tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}")
             self.addWidget(tdl, alignment=Qt.AlignmentFlag.AlignHCenter)
+        
+        self.setSpacing(0)
     
     def refresh(self):
         
@@ -159,7 +163,7 @@ class ListWindow(QMainWindow):
     def __init__(self, path: str, title: str | None):
         super().__init__()
 
-        self.resize(400, 800)
+        self.resize(400, 700)
         
         self.path = path 
         self.list_title = title
@@ -298,7 +302,7 @@ class Task(QHBoxLayout):
         return font
     
 
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
@@ -316,11 +320,12 @@ class MainWindow(QWidget):
         
         self.refreshButton = TDButton("refresh")
         font = self.refreshButton.font()
-        font.setPointSize(10)
+        font.setPointSize(15)
         font.setWeight(400)
         self.refreshButton.setFont(font)
         self.refreshButton.pressed.connect(self.listbox.refresh)
         self.listboxTitle = QLabel("Lists")
+        self.listboxTitle.setObjectName("ListBoxTitle")
         
         self.refreshHeader.addWidget(self.listboxTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.refreshHeader.addWidget(self.refreshButton)
@@ -335,8 +340,15 @@ class MainWindow(QWidget):
         self.listContainer.addLayout(self.refreshHeader)
         self.listContainer.addWidget(self.scrollbox)
         
+        self.scrollbox.setMaximumSize(400, 400)
+        
         self.mainframe.addLayout(self.menu)
         self.mainframe.addLayout(self.listContainer)
         
-        self.setLayout(self.mainframe)
+        self.cWidget = QWidget()
+        
+        self.cWidget.setLayout(self.mainframe)
+        
+        self.setCentralWidget(self.cWidget)
+        
             
