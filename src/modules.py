@@ -3,7 +3,7 @@ import pathlib
 import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit ,
                             QHBoxLayout, QVBoxLayout, QFrame, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
@@ -19,6 +19,7 @@ class TDList(QPushButton):
         self.setText(list_title)
         self.pressed.connect(self.openList)
         
+        self.setFont(QFont("arial", 20, 400))
         
         self.setObjectName("TDL")
     
@@ -27,12 +28,6 @@ class TDList(QPushButton):
         
         self.list_window = ListWindow(self.path, self.title)
         self.list_window.show()
-    
-    def getBigFont(self):
-        font = QLabel().font()
-        font.setPointSize(15)
-        font.setWeight(500)
-        return font
     
     
 class MainMenu(QVBoxLayout):
@@ -72,6 +67,8 @@ class CreatNewListDialog(QDialog):
         self.mainframe = QVBoxLayout()
         #line input for name
         self.inputBox = QLineEdit(self)
+        self.inputBox.setFont(QFont("arial", 15, 400))
+        self.inputBox.setPlaceholderText("List Name")
         
         #button box
         buttons = (QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -163,7 +160,7 @@ class ListWindow(QMainWindow):
     def __init__(self, path: str, title: str | None):
         super().__init__()
 
-        self.resize(400, 700)
+        self.resize(500, 700)
         
         self.path = path 
         self.list_title = title
@@ -194,10 +191,10 @@ class ListWindow(QMainWindow):
                     self.taskbox.addLayout(Task(task,self.path))         
         
         mainframe = QVBoxLayout()
-        mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignCenter)
+        mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignHCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
-        mainframe.setSpacing(20)
+        mainframe.setSpacing(10)
         
         self.widget.setLayout(mainframe)
         
@@ -257,7 +254,7 @@ class Task(QHBoxLayout):
         self.path = path
         
         self.checkbox.checkStateChanged.connect(self.checkTask)
-        self.checkbox.setFont(self.getBigFont())
+
         self.text.setFont(self.getBigFont())
         self.delete_btn.pressed.connect(self.deleteTask)
         self.delete_btn.setFont(self.getBigFont())
@@ -326,6 +323,7 @@ class MainWindow(QMainWindow):
         self.refreshButton.pressed.connect(self.listbox.refresh)
         self.listboxTitle = QLabel("Lists")
         self.listboxTitle.setObjectName("ListBoxTitle")
+        self.listboxTitle.setFont(QFont("arial", 16, 400))
         
         self.refreshHeader.addWidget(self.listboxTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.refreshHeader.addWidget(self.refreshButton)
