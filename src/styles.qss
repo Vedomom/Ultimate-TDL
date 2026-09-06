@@ -9,27 +9,25 @@ QMainWindow, QWidget{
 
 QScrollArea{
     border: 1px solid mintcream;
-
+    
 }
 
-QPushButton{
+#MenuButton ,#RefreshButton{
     border-radius: 1em;
-    border: 0.5px solid #ffb1dd;
     background-color: #333333;
-    padding: 0.5em 1.5em;
+    padding: 0.5em 0%;
+    border: 0.5px solid mintcream;
 }
 
-QPushButton:hover{
-    border-width: 1px;
+#MenuButton:hover ,#RefreshButton:hover{
     color: #ffb1dd;
     background-color: #383838;
 }
 
-QPushButton:pressed{
-    border-width: 0.5px;
-    border-color: pink;
+#MenuButton:pressed , #RefreshButton:pressed{
     color: #d394b8;
-    background-color: #252525;
+    border-color: antiquewhite;
+    background-color: #303030;
 }
 
 
@@ -43,5 +41,54 @@ QLineEdit{
 }
 QLineEdit:focus{
     border-width: 1.5px;
+}
+
+#TDL{
+    border-radius: 1em;
+    background-color: #ffb1dd;
+    padding: 0.5em 1em;
+    color: #252525;
+}
+
+#TDL:hover{
+    background-color: #ffc4e5;
+}
+
+#TDL:pressed{
+    background-color: #d394b8;
+}
+
+.TDButton, #DialogButton QPushButton{
+    border-radius: 1em;
+    background-color: #333333;
+    padding: 1em 1em;
+    color: mintcream;
+    border: 0.5px solid dodgerblue;
+}
+
+.TDButton:hover , #DialogButton QPushButton:hover{
+    background-color: #383838;
+    border-width: 1.5px;
+}
+
+.TDButton:pressed , #DialogButton QPushButton:pressed{
+    background-color: #303030;
+    border-width: 0.5px;
+    color: rgb(180, 182, 181);
+    border-color: blue;
+}
+
+#ListDeleteButton , #TaskDeleteButton{
+    background-color: crimson;
+    padding: 0.5em 0.5em;
+    color: #252525;
+    border-radius: 1em;
+}
+#ListDeleteButton:hover , #TaskDeleteButton:hover{
+    background-color: red;
+}
+
+#ListDeleteButton:pressed , #TaskDeleteButton:pressed{
+    background-color: darkred;
 }
 
