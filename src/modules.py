@@ -2,10 +2,10 @@ import os
 import pathlib
 import random
 from PyQt6 import sip
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit ,
-                            QHBoxLayout, QVBoxLayout, QFrame, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
+                            QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
 LIST_PATH = "./lists"
 
@@ -71,6 +71,9 @@ class MainMenu(QVBoxLayout):
         
         self.window = window
         self.new_btn = TDButton("new")  
+        file_icon = QIcon()
+        file_icon.addFile("resources/file_icon.png")
+        self.new_btn.setIcon(file_icon)
 
         
         self.new_btn.pressed.connect(self.creatList)
@@ -139,27 +142,53 @@ class CreatNewListDialog(QDialog):
         
         self.frame = frame
         
+        self.warning = QLabel("The Entered Filename is Invalid, Make Sure to not use any of the following characters \n [/ ? : ; \\ \"  * | > <]")
+        self.warning.setObjectName("InvalidWarning")
+        self.warning.setFont(QFont("Georgia", 11, 500))
+        self.warning.setWordWrap(True)
+        
         self.buttonBox.accepted.connect(self.createNew)
         self.buttonBox.rejected.connect(self.reject)
         self.inputBox.returnPressed.connect(self.createNew)
         
         self.mainframe.addWidget(self.inputBox, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.mainframe.addWidget(self.warning, alignment=Qt.AlignmentFlag.AlignCenter)
         self.mainframe.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
         
+        self.warning.hide()
         self.setLayout(self.mainframe)
         #creat txt file
     
     def createNew(self):
         
-        if not os.path.exists(LIST_PATH):
-            os.mkdir(LIST_PATH)
         
-        with open(f"{LIST_PATH}/{self.inputBox.text()}.txt", 'w'):
-            self.list = ListWindow(f"{LIST_PATH}/{self.inputBox.text()}.txt", self.inputBox.text())
+        invalid_list = str("/ ? : ; \\ \"  * | > < ")
         
-        self.frame.refresh()
+        is_valid = True
         
-        self.close()
+        for char in invalid_list:
+            if char in self.inputBox.text():
+                is_valid = False
+                break
+            
+        
+        if is_valid:
+            self.warning.hide()
+
+            if not os.path.exists(LIST_PATH):
+                os.mkdir(LIST_PATH)
+            
+            with open(f"{LIST_PATH}/{self.inputBox.text()}.txt", 'w'):
+                self.list = ListWindow(f"{LIST_PATH}/{self.inputBox.text()}.txt", self.inputBox.text())
+            
+            self.frame.refresh()
+            
+            self.close()
+        
+        else:
+            print("invalid filename")
+            self.warning.show()
+            return
 
 class Heading(QLabel):
     
@@ -267,9 +296,11 @@ class ListWindow(QMainWindow):
                     self.taskbox.addLayout(Task(task,self.path))         
         
         mainframe = QVBoxLayout()
+        mainframe.addStretch()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignHCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
+        mainframe.addStretch()
         mainframe.setSpacing(10)
         
         self.widget.setLayout(mainframe)
@@ -326,19 +357,23 @@ class Task(QHBoxLayout):
         
         self.text = QLabel(text)
         self.checkbox = QCheckBox()
-        self.delete_btn = TDButton("X")
+        self.delete_btn = QPushButton()
         self.path = path
+        
+        self.checkbox.setFont(QFont("georgia", 15, 500))
         self.checkbox.checkStateChanged.connect(self.checkTask)
 
         self.text.setFont(self.getBigFont())
         self.text.setWordWrap(True)
         
+        minus_icon = QIcon()
+        minus_icon.addFile("resources/minus_icon.png")
+        self.delete_btn.setIcon(minus_icon)
         self.delete_btn.pressed.connect(self.deleteTask)
-        self.delete_btn.setFont(self.getBigFont())
         self.delete_btn.setObjectName("TaskDeleteButton")
         
         self.addWidget(self.text, alignment=Qt.AlignmentFlag.AlignRight)
-        self.addWidget(self.checkbox, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.addWidget(self.checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
         self.addWidget(self.delete_btn, alignment=Qt.AlignmentFlag.AlignLeft)
         
         
@@ -394,9 +429,12 @@ class MainWindow(QMainWindow):
         self.scrollbox = QScrollArea()
         self.scrollwidget = QWidget()
         
+        refresh_icon = QIcon()
+        refresh_icon.addFile("resources/refresh_icon.png")
         self.refreshButton = TDButton("refresh")
         self.refreshButton.setFont(QFont("arial", 16, 400))
         self.refreshButton.setObjectName("RefreshButton")
+        self.refreshButton.setIcon(refresh_icon)
         self.refreshButton.pressed.connect(self.listbox.refresh)
         self.listboxTitle = QLabel("Lists")
         self.listboxTitle.setObjectName("ListBoxTitle")

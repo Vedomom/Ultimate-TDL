@@ -12,11 +12,17 @@ QScrollArea{
     
 }
 
+QCheckBox::indicator{
+    width: 2em;
+    height: 2em;
+}
+
 #MenuButton ,#RefreshButton{
     border-radius: 1em;
     background-color: #333333;
     padding: 0.5em 0%;
     border: 0.5px solid mintcream;
+    icon-size: 2em;
 }
 
 #MenuButton:hover ,#RefreshButton:hover{
@@ -29,6 +35,8 @@ QScrollArea{
     border-color: antiquewhite;
     background-color: #303030;
 }
+
+
 
 
 QLineEdit{
@@ -83,6 +91,7 @@ QLineEdit:focus{
     padding: 0.5em 0.5em;
     color: #252525;
     border-radius: 1em;
+    icon-size: 2em;
 }
 #ListDeleteButton:hover , #TaskDeleteButton:hover{
     background-color: red;
@@ -90,5 +99,9 @@ QLineEdit:focus{
 
 #ListDeleteButton:pressed , #TaskDeleteButton:pressed{
     background-color: darkred;
+}
+
+#InvalidWarning{
+    color: red;
 }
 

@@ -6,7 +6,6 @@ from styles import styleString
 app = QApplication([])
 
 app.setStyleSheet(styleString)
-
 mainwindow = MainWindow()
 
 
