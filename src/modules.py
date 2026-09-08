@@ -142,7 +142,7 @@ class CreatNewListDialog(QDialog):
         
         self.frame = frame
         
-        self.warning = QLabel("The Entered Filename is Invalid, Make Sure to not use any of the following characters \n [/ ? : ; \\ \"  * | > <]")
+        self.warning = QLabel("The Entered Filename is Invalid, Make Sure to not use any of the following characters \n [  / ? : ; \\ \"  * | > <  ]")
         self.warning.setObjectName("InvalidWarning")
         self.warning.setFont(QFont("Georgia", 11, 500))
         self.warning.setWordWrap(True)
@@ -231,6 +231,7 @@ class ListFrame(QVBoxLayout):
         self.p = parent
         
         self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
+        self.lists.sort(key= os.path.getmtime, reverse= True)
         
         for list in self.lists:
             
@@ -246,7 +247,7 @@ class ListFrame(QVBoxLayout):
         for index in range(0, listCount):
             l = self.itemAt(index)
             lists.append(l)
-            
+        
         for list in lists:
             for i in range(0, list.count()): # type: ignore
                 childWidget = list.itemAt(i).widget()# type: ignore
@@ -254,6 +255,7 @@ class ListFrame(QVBoxLayout):
             sip.delete(list) # type: ignore
         
         self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
+        self.lists.sort(key= os.path.getmtime, reverse= True)
         
         for list in self.lists:
             
@@ -265,7 +267,8 @@ class ListWindow(QMainWindow):
     def __init__(self, path: str, title: str | None):
         super().__init__()
 
-        self.resize(500, 700)
+        self.resize(600, 800)
+        
         
         self.path = path 
         self.list_title = title
@@ -283,11 +286,14 @@ class ListWindow(QMainWindow):
         self.task_input = TaskInput()
         self.mixButton = TDButton("mix")
         
+        self.taskbox.setObjectName("TaskBox")
+        
         self.mixButton.pressed.connect(self.mixTasks)
         self.task_input.add_btn.pressed.connect(self.addTask)
         self.task_input.returnPressed.connect(self.addTask)
         
-        self.task_input.taskInputFrame.addWidget(self.mixButton)
+        self.task_input.taskInputFrame.addWidget(self.mixButton, alignment= Qt.AlignmentFlag.AlignCenter)
+        self.task_input.taskInputFrame.addStretch()
         
         with open(path,'r') as tdl:
             tasklist = tdl.read().split("\n")       
@@ -296,12 +302,13 @@ class ListWindow(QMainWindow):
                     self.taskbox.addLayout(Task(task,self.path))         
         
         mainframe = QVBoxLayout()
-        mainframe.addStretch()
+        #mainframe.addStretch()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignHCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
         mainframe.addStretch()
-        mainframe.setSpacing(10)
+        mainframe.setSpacing(20)
+        self.taskbox.setSpacing(20)
         
         self.widget.setLayout(mainframe)
         
@@ -347,8 +354,9 @@ class TaskInput(QLineEdit):
         self.setFont(self.add_btn.getBigFont())
         
         self.taskInputFrame = QHBoxLayout()
-        self.taskInputFrame.addWidget(self, alignment=Qt.AlignmentFlag.AlignRight)
-        self.taskInputFrame.addWidget(self.add_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.taskInputFrame.addStretch()
+        self.taskInputFrame.addWidget(self, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.taskInputFrame.addWidget(self.add_btn, alignment=Qt.AlignmentFlag.AlignCenter)
     
 
 class Task(QHBoxLayout):
@@ -372,9 +380,11 @@ class Task(QHBoxLayout):
         self.delete_btn.pressed.connect(self.deleteTask)
         self.delete_btn.setObjectName("TaskDeleteButton")
         
+        self.addStretch()
         self.addWidget(self.text, alignment=Qt.AlignmentFlag.AlignRight)
         self.addWidget(self.checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
         self.addWidget(self.delete_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.addStretch()
         
         
     def checkTask(self):
@@ -436,13 +446,9 @@ class MainWindow(QMainWindow):
         self.refreshButton.setObjectName("RefreshButton")
         self.refreshButton.setIcon(refresh_icon)
         self.refreshButton.pressed.connect(self.listbox.refresh)
-        self.listboxTitle = QLabel("Lists")
-        self.listboxTitle.setObjectName("ListBoxTitle")
-        self.listboxTitle.setFont(QFont("arial", 16, 400))
         
-        self.mainHeader.addWidget(self.menu.buttonList[0])
-        self.mainHeader.addWidget(self.listboxTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
-        self.mainHeader.addWidget(self.refreshButton)
+        self.mainHeader.addWidget(self.menu.new_btn, alignment= Qt.AlignmentFlag.AlignLeft)
+        self.mainHeader.addWidget(self.refreshButton, alignment= Qt.AlignmentFlag.AlignRight)
         
         
         self.scrollwidget.setLayout(self.listbox)
