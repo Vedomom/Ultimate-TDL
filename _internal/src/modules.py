@@ -74,7 +74,7 @@ class MainMenu(QVBoxLayout):
         self.window = window
         self.new_btn = TDButton("new")  
         file_icon = QIcon()
-        file_icon.addFile("resources/file_icon.png")
+        file_icon.addFile("_internal/resources/file_icon.png")
         self.new_btn.setIcon(file_icon)
 
         
@@ -377,7 +377,7 @@ class Task(QHBoxLayout):
         self.text.setWordWrap(True)
         
         minus_icon = QIcon()
-        minus_icon.addFile("resources/minus_icon.png")
+        minus_icon.addFile("_internal/resources/minus_icon.png")
         self.delete_btn.setIcon(minus_icon)
         self.delete_btn.pressed.connect(self.deleteTask)
         self.delete_btn.setObjectName("TaskDeleteButton")
@@ -442,7 +442,7 @@ class MainWindow(QMainWindow):
         self.scrollwidget = QWidget()
         
         refresh_icon = QIcon()
-        refresh_icon.addFile("resources/refresh_icon.png")
+        refresh_icon.addFile("_internal/resources/refresh_icon.png")
         self.refreshButton = TDButton("refresh")
         self.refreshButton.setFont(QFont(FONT_NAME, 16, 400))
         self.refreshButton.setObjectName("RefreshButton")
