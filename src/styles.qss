@@ -1,5 +1,5 @@
 *{
-    font-family: Georgia;
+    font-family: Bahnschrift;
 }
 
 QMainWindow, QWidget{
@@ -53,6 +53,7 @@ QLineEdit{
 }
 QLineEdit:focus{
     border-width: 1.5px;
+    border-color: aqua;
 }
 
 #TDL{
@@ -113,3 +114,7 @@ QLineEdit:focus{
     padding: 1em 5em;
 }
 
+.Heading{
+    margin-top: 2em;
+    margin-bottom: 1em;
+}

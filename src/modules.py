@@ -3,11 +3,13 @@ import pathlib
 import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QFontDatabase
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
                             QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
 LIST_PATH = "./lists"
+FONT_NAME = "Bahnschrift"
+
 
 class TDList(QHBoxLayout):
     
@@ -22,16 +24,16 @@ class TDList(QHBoxLayout):
         self.button = QPushButton()
         self.button.setText(list_title)
         self.button.pressed.connect(self.openList)
-        self.button.setFont(QFont("arial", 18, 600))  
+        self.button.setFont(QFont(FONT_NAME, 18, 600))  
         self.button.setObjectName("TDL")
         
         self.taskCount = QLabel()
         self.taskCount.setText(f"- - - {self.countTasks()} Tasks - - -")
-        self.taskCount.setFont(QFont("arial", 14, 400))
+        self.taskCount.setFont(QFont(FONT_NAME, 14, 400))
         
-        self.deleteBTN = QPushButton("delete")
+        self.deleteBTN = QPushButton("Delete")
         self.deleteBTN.setObjectName("ListDeleteButton")
-        self.deleteBTN.setFont(QFont("arial", 14, 500))
+        self.deleteBTN.setFont(QFont(FONT_NAME, 14, 500))
         self.deleteBTN.pressed.connect(self.deleteList)
         
         self.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -102,7 +104,7 @@ class DeleteListDialog(QDialog):
         self.frame = listframe
         
         self.text = QLabel("are you sure you want to delete this list?")
-        self.text.setFont(QFont("Georgia", 14, 400))
+        self.text.setFont(QFont(FONT_NAME, 14, 400))
         #button box
         buttons = (QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
         self.buttonBox = QDialogButtonBox(buttons)
@@ -132,7 +134,7 @@ class CreatNewListDialog(QDialog):
         self.mainframe = QVBoxLayout()
         #line input for name
         self.inputBox = QLineEdit(self)
-        self.inputBox.setFont(QFont("arial", 15, 400))
+        self.inputBox.setFont(QFont(FONT_NAME, 15, 400))
         self.inputBox.setPlaceholderText("List Name")
         
         #button box
@@ -144,7 +146,7 @@ class CreatNewListDialog(QDialog):
         
         self.warning = QLabel("The Entered Filename is Invalid, Make Sure to not use any of the following characters \n [  / ? : ; \\ \"  * | > <  ]")
         self.warning.setObjectName("InvalidWarning")
-        self.warning.setFont(QFont("Georgia", 11, 500))
+        self.warning.setFont(QFont(FONT_NAME, 11, 500))
         self.warning.setWordWrap(True)
         
         self.buttonBox.accepted.connect(self.createNew)
@@ -368,7 +370,7 @@ class Task(QHBoxLayout):
         self.delete_btn = QPushButton()
         self.path = path
         
-        self.checkbox.setFont(QFont("georgia", 15, 500))
+        self.checkbox.setFont(QFont(FONT_NAME, 15, 500))
         self.checkbox.checkStateChanged.connect(self.checkTask)
 
         self.text.setFont(self.getBigFont())
@@ -409,14 +411,14 @@ class Task(QHBoxLayout):
         sip.delete(self)
     
     def getGrayFont(self):
-        font = QFont("Georgia")
+        font = QFont(FONT_NAME)
         font.setPointSize(20)
         font.setWeight(300)
         font.setStrikeOut(True)
         return font
     
     def getBigFont(self):
-        font = QFont("Georgia")
+        font = QFont(FONT_NAME)
         font.setPointSize(20)
         font.setWeight(600)
         return font
@@ -442,7 +444,7 @@ class MainWindow(QMainWindow):
         refresh_icon = QIcon()
         refresh_icon.addFile("resources/refresh_icon.png")
         self.refreshButton = TDButton("refresh")
-        self.refreshButton.setFont(QFont("arial", 16, 400))
+        self.refreshButton.setFont(QFont(FONT_NAME, 16, 400))
         self.refreshButton.setObjectName("RefreshButton")
         self.refreshButton.setIcon(refresh_icon)
         self.refreshButton.pressed.connect(self.listbox.refresh)
