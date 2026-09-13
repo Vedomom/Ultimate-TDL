@@ -3,7 +3,7 @@ import pathlib
 import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QIcon, QFontDatabase
+from PyQt6.QtGui import QFont, QIcon, QFontDatabase, QImage
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
                             QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
@@ -468,12 +468,22 @@ class MainWindow(QMainWindow):
         self.listContainer.addWidget(self.scrollbox, alignment=Qt.AlignmentFlag.AlignCenter, stretch=0)
         self.listContainer.addStretch()
         
+        self.banner = QIcon("_internal/resources/UTDL1920.png")
+        self.title = QLabel("Ultimate To-Do-List")
+        self.title.setFont(QFont(FONT_NAME, 20, 500))
+        self.title.setWindowIcon(self.banner)
+        
+        self.mainframe.addStretch()
+        self.mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.mainframe.addStretch()
         #self.mainframe.addLayout(self.menu)
         self.mainframe.addLayout(self.listContainer)
         
         self.cWidget = QWidget()
         
         self.cWidget.setLayout(self.mainframe)
+        
+        self.setWindowIcon(self.banner)
         
         self.setCentralWidget(self.cWidget)
         
