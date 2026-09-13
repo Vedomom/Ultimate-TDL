@@ -460,6 +460,7 @@ class MainWindow(QMainWindow):
         self.scrollbox.setWidget(self.scrollwidget)
         
         self.scrollbox.setMinimumWidth(self.width())
+        self.scrollbox.setMinimumHeight(self.height() - 200)
         self.listbox.setSpacing(10)
         
         self.listContainer.addStretch()
