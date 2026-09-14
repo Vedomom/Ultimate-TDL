@@ -119,6 +119,4 @@ QLineEdit:focus{
     margin-bottom: 1em;
 }
 
-#MainTitle{
-}
 
