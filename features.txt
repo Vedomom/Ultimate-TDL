@@ -1,4 +1,0 @@
-- main menue
-- multiple lists 
-- lists saved to simple text files
-- ability to create, modify, rearrange , and delete/tick [chores] in each lists
