@@ -3,7 +3,7 @@ import pathlib
 import random
 from PyQt6 import sip
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QIcon, QFontDatabase, QImage
+from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
                             QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
@@ -468,13 +468,28 @@ class MainWindow(QMainWindow):
         self.listContainer.addWidget(self.scrollbox, alignment=Qt.AlignmentFlag.AlignCenter, stretch=0)
         self.listContainer.addStretch()
         
-        self.banner = QIcon("_internal/resources/UTDL1920.png")
+        self.icon = QIcon("_internal/resources/UTDL100.png")
+        self.bannerPM = QPixmap("_internal/resources/UTDL100.png")
+        self.banner = QLabel(self)
+        
+        self.banner.setPixmap(self.bannerPM)
+        
+
+        
         self.title = QLabel("Ultimate To-Do-List")
-        self.title.setFont(QFont(FONT_NAME, 20, 500))
-        self.title.setWindowIcon(self.banner)
+        self.title.setFont(QFont(FONT_NAME, 30, 800))
+        
+        self.title.setObjectName("MainTitle")
+        self.banner.setObjectName("Banner")
+        
+        self.titleBox = QHBoxLayout()
+        self.titleBox.addStretch()
+        self.titleBox.addWidget(self.banner)
+        self.titleBox.addWidget(self.title)
+        self.titleBox.addStretch()
         
         self.mainframe.addStretch()
-        self.mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.mainframe.addLayout(self.titleBox)
         self.mainframe.addStretch()
         #self.mainframe.addLayout(self.menu)
         self.mainframe.addLayout(self.listContainer)
@@ -483,7 +498,7 @@ class MainWindow(QMainWindow):
         
         self.cWidget.setLayout(self.mainframe)
         
-        self.setWindowIcon(self.banner)
+        self.setWindowIcon(self.icon)
         
         self.setCentralWidget(self.cWidget)
         

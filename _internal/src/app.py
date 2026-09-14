@@ -6,6 +6,7 @@ from .styles import styleString
 app = QApplication([])
 
 app.setStyleSheet(styleString)
+app.setWindowIcon(QIcon("_internal/resources/UTDL100.png"))
 mainwindow = MainWindow()
 
 
