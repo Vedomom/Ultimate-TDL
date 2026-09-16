@@ -1,22 +1,23 @@
 import os
 import pathlib
 import random
+import sqlite3
 from PyQt6 import sip
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
                             QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
 
-LIST_PATH = "./lists"
+
 FONT_NAME = "Bahnschrift"
+DB = "_internal/Lists.db"
 
 
 class TDList(QHBoxLayout):
     
     
-    def __init__(self, list_title: str, list_path: str, parent: QWidget, frame:ListFrame):
+    def __init__(self, list_title: str, parent: QWidget, frame:ListFrame):
         super().__init__()
-        self.path = list_path
         self.title = list_title
         
         self.p = parent
@@ -47,10 +48,19 @@ class TDList(QHBoxLayout):
     
     def countTasks(self):
         count = 0
-        with open(self.path, "r") as tdl:
-            tasks = tdl.readlines()
-            for task in tasks:
-                count += 1
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+        
+        cursor.execute(f"""
+        --sql
+        SELECT * FROM {self.title}
+        ;
+        """)
+        
+        count = len(cursor.fetchall())
+          
+        conn.commit()
+        conn.close()
                 
         return count
     
@@ -62,7 +72,7 @@ class TDList(QHBoxLayout):
     
     def openList(self):
         
-        self.list_window = ListWindow(self.path, self.title)
+        self.list_window = ListWindow(self.title)
         self.list_window.show()
     
     
@@ -120,16 +130,23 @@ class DeleteListDialog(QDialog):
         self.setLayout(self.mainframe)
     
     def deleteList(self):
-        if os.path.exists(self.tdl.path):
-            os.remove(self.tdl.path)
-        else:
-            print("path doesn't exist")
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+        
+        cursor.execute(f"""
+        DROP TABLE IF EXISTS {self.tdl.title} 
+        ;
+        """)
+        conn.commit()
+        conn.close()
         self.frame.refresh()
         self.close()
 
 class CreatNewListDialog(QDialog):
     def __init__(self, parent: QWidget, frame:ListFrame):
         super().__init__(parent)
+        
+        
         
         self.mainframe = QVBoxLayout()
         #line input for name
@@ -164,7 +181,8 @@ class CreatNewListDialog(QDialog):
     def createNew(self):
         
         
-        invalid_list = str("/ ? : ; \\ \"  * | > < ")
+        
+        invalid_list = str("/?:;\\\" *|>< ")
         
         is_valid = True
         
@@ -176,13 +194,21 @@ class CreatNewListDialog(QDialog):
         
         if is_valid:
             self.warning.hide()
+            conn = sqlite3.connect(DB)
+                            
+            cursor = conn.cursor()
 
-            if not os.path.exists(LIST_PATH):
-                os.mkdir(LIST_PATH)
+            cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.inputBox.text()} (
+                task_id INTEGER PRIMARY KEY NOT NULL,
+                task_text TEXT NOT NULL,
+                checked BOOLEAN NOT NULL 
+            )
+            ;
+            """)
             
-            with open(f"{LIST_PATH}/{self.inputBox.text()}.txt", 'w'):
-                self.list = ListWindow(f"{LIST_PATH}/{self.inputBox.text()}.txt", self.inputBox.text())
-            
+            conn.commit()
+            conn.close()
             self.frame.refresh()
             
             self.close()
@@ -232,14 +258,27 @@ class ListFrame(QVBoxLayout):
         self.setSpacing(1)
         self.p = parent
         
-        self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
-        self.lists.sort(key= os.path.getmtime, reverse= True)
+        conn = sqlite3.connect(DB)
+                
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        SELECT name FROM sqlite_master WHERE TYPE= 'table'
+        ;
+        """)
+        
+        conn.commit()
+        
+        self.lists = [list[0] for list in cursor.fetchall()]
+        self.lists.reverse()
+        
         
         for list in self.lists:
             
-            tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}", parent, self)
+            tdl = TDList(list, parent, self)
             self.addLayout(tdl)
         
+        conn.close()
         self.setSpacing(0)
     
     def refresh(self):
@@ -256,24 +295,34 @@ class ListFrame(QVBoxLayout):
                 childWidget.deleteLater() # type: ignore
             sip.delete(list) # type: ignore
         
-        self.lists = [f for f in pathlib.Path().glob(f"{LIST_PATH}/*.txt")]
-        self.lists.sort(key= os.path.getmtime, reverse= True)
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        SELECT name FROM sqlite_master WHERE TYPE= 'table'
+        ;
+        """)
+        
+        self.lists = [list[0] for list in cursor.fetchall()]
+        self.lists.reverse()
+        
+        conn.commit()
+        conn.close()
         
         for list in self.lists:
             
-            tdl = TDList(list.name.removesuffix(".txt"), f"{LIST_PATH}/{list.name}", self.p, self)
+            tdl = TDList(list, self.p, self)
             self.addLayout(tdl)
 
 class ListWindow(QMainWindow):
     
-    def __init__(self, path: str, title: str | None):
+    def __init__(self, title: str):
         super().__init__()
 
         self.resize(600, 800)
         
+        self.name = title
         
-        self.path = path 
-        self.list_title = title
         
         self.scrollarea = QScrollArea()
         
@@ -297,11 +346,21 @@ class ListWindow(QMainWindow):
         self.task_input.taskInputFrame.addWidget(self.mixButton, alignment= Qt.AlignmentFlag.AlignCenter)
         self.task_input.taskInputFrame.addStretch()
         
-        with open(path,'r') as tdl:
-            tasklist = tdl.read().split("\n")       
-            for task in tasklist:
-                if task != '':
-                    self.taskbox.addLayout(Task(task,self.path))         
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+                
+        cursor.execute(f"""
+        SELECT * from {title}
+        ;
+        """) 
+        
+        conn.commit()
+        tasklist = cursor.fetchall() 
+        conn.close()
+        
+              
+        for task in tasklist:
+            self.taskbox.addLayout(Task(task[1], title, task[2]))         
         
         mainframe = QVBoxLayout()
         #mainframe.addStretch()
@@ -324,13 +383,19 @@ class ListWindow(QMainWindow):
         
     def addTask(self):
         if not self.task_input.text() == "" and not self.task_input.text() == " ":
-            task = Task(self.task_input.text(), self.path)
+            task = Task(self.task_input.text(), self.name, False)
             self.taskbox.addLayout(task)
             
-            with open(self.path, "a") as listFile:
-                listFile.write(f"{task.text.text()}\n")
-                
+            conn = sqlite3.connect(DB)
+            cursor = conn.cursor()
+
+            cursor.execute(f"""
+            INSERT INTO {self.name} ( task_text, checked ) VALUES (:text, FALSE)
+            ;
+            """, {"text":self.task_input.text()})
             
+            conn.commit()
+            conn.close()
             self.task_input.clear()
         else:
             return
@@ -362,19 +427,24 @@ class TaskInput(QLineEdit):
     
 
 class Task(QHBoxLayout):
-    def __init__(self, text: str, path: str):
+    def __init__(self, text: str, title: str, checked: bool):
         super().__init__()
         
         self.text = QLabel(text)
         self.checkbox = QCheckBox()
         self.delete_btn = QPushButton()
-        self.path = path
+        self.list_title = title
+        
+        self.checked = checked
         
         self.checkbox.setFont(QFont(FONT_NAME, 15, 500))
         self.checkbox.checkStateChanged.connect(self.checkTask)
+        self.checkbox.setChecked(self.checked)
 
         self.text.setFont(self.getBigFont())
         self.text.setWordWrap(True)
+        
+        self.checkTask()
         
         minus_icon = QIcon()
         minus_icon.addFile("_internal/resources/minus_icon.png")
@@ -392,18 +462,50 @@ class Task(QHBoxLayout):
     def checkTask(self):
         if self.checkbox.isChecked():
             self.text.setFont(self.getGrayFont())
+            conn = sqlite3.connect(DB)
+            cursor = conn.cursor()
+            
+            cursor.execute(F"""
+            --sql
+            UPDATE {self.list_title}
+            SET checked = TRUE 
+            WHERE task_text = :tasktext
+            ;
+            """, {"tasktext": self.text.text()})
+            
+            conn.commit()
+            conn.close()
         else:
+            self.checked = False
+            
+            conn = sqlite3.connect(DB)
+            cursor = conn.cursor()
+            
+            cursor.execute(F"""
+            --sql
+            UPDATE {self.list_title}
+            SET checked = FALSE 
+            WHERE task_text = :tasktext
+            ;
+            """, {"tasktext": self.text.text()})
+            
+            conn.commit()
+            conn.close()
+            
             self.text.setFont(self.getBigFont())
     
     def deleteTask(self):
         
-        with open(self.path, "r") as listFile_R:
-            lines = listFile_R.readlines()
-            
-            with open(self.path, "w") as listFile_W:
-                for line in lines:
-                    if line.strip("\n") != self.text.text():
-                        listFile_W.write(line)
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+        
+        cursor.execute(f"""
+        DELETE FROM {self.list_title} WHERE task_text= :text
+        ;
+        """, {"text": self.text.text()})
+                  
+        conn.commit()
+        conn.close()
         
         self.text.deleteLater()
         self.checkbox.deleteLater()
