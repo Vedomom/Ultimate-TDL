@@ -6,7 +6,7 @@ from PyQt6 import sip
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
-                            QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea)
+                            QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea, QFileDialog)
 
 
 FONT_NAME = "Bahnschrift"
@@ -37,8 +37,19 @@ class TDList(QHBoxLayout):
         self.deleteBTN.setFont(QFont(FONT_NAME, 14, 500))
         self.deleteBTN.pressed.connect(self.deleteList)
         
+        export_icon = QIcon()
+        export_icon.addFile("_internal/resources/export_icon.png")
+        self.export_btn = QPushButton("Export")
+        self.export_btn.pressed.connect(self.exportList)
+        self.export_btn.setFont(QFont(FONT_NAME, 14, 500))
+        self.export_btn.setObjectName("ListExportButton")
+        self.export_btn.setIcon(export_icon)
+        
         self.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.addStretch()
         self.addWidget(self.taskCount, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.addStretch()
+        self.addWidget(self.export_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         self.addWidget(self.deleteBTN, alignment=Qt.AlignmentFlag.AlignRight)
         
         self.setObjectName("TDL")
@@ -75,6 +86,93 @@ class TDList(QHBoxLayout):
         self.list_window = ListWindow(self.title)
         self.list_window.show()
     
+    def exportList(self):
+            list_db = sqlite3.connect(f"exports/{self.title}.db")
+            list_cursor = list_db.cursor()
+            isNotExported = True
+            
+            
+            
+            list_cursor.execute(f"""
+            --sql
+             SELECT name FROM sqlite_master WHERE TYPE='table'
+            ;
+            """)
+
+            for table in list_cursor.fetchall():
+                if table:
+                    print(table)
+                    if table[0] == self.title:
+                        isNotExported = False
+                        warning_dialog = ExportDialog(self.p, "This List Has Already Been Exported", True)
+                        warning_dialog.show()
+                        warning_dialog.exec()
+                        
+            
+            if isNotExported:      
+            
+                list_cursor.execute(f"""
+                --sql
+                ATTACH DATABASE "{DB}" as 'Y'
+                ;
+                """)    
+                
+                list_cursor.execute(f"""
+                --sql
+                CREATE TABLE IF NOT EXISTS {self.title} (
+                    task_id INTEGER PRIMARY KEY NOT NULL,
+                    task_text TEXT NOT NULL,
+                    checked BOOLEAN NOT NULL 
+                ) 
+                ;
+                """)
+                
+                list_cursor.execute(f"""
+                --sql
+                INSERT INTO {self.title} SELECT * FROM Y.{self.title}
+                ;
+                """)
+                
+                
+                list_cursor.execute(f"""
+                --sql
+                SELECT * FROM {self.title}
+                ;
+                """)
+                
+                dialog = ExportDialog(self.p, "The List Has Been Exported Successfully!")
+                dialog.show()
+                dialog.exec()
+
+                
+            list_db.commit()
+            list_db.close()
+    
+
+class ExportDialog(QDialog):
+    
+    def __init__(self, parent: QWidget, text: str , isWarning :bool = False) -> None:
+        super().__init__(parent)
+        
+        buttons = (QDialogButtonBox.StandardButton.Ok)
+        self.buttonBox = QDialogButtonBox(buttons)
+        self.buttonBox.setObjectName("DialogButton")
+        self.buttonBox.accepted.connect(self.accept)
+        
+        self.text = QLabel(text)
+        self.text.setFont(QFont(FONT_NAME, 14, 400))
+        if isWarning:
+            self.text.setObjectName("WarningText")
+        else:
+            self.text.setObjectName("ReqularText")
+        
+        self.mainframe = QVBoxLayout()
+        self.mainframe.addWidget(self.text, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.mainframe.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        self.setLayout(self.mainframe)
+        
+
     
 class MainMenu(QVBoxLayout):
     
@@ -361,9 +459,13 @@ class ListWindow(QMainWindow):
               
         for task in tasklist:
             self.taskbox.addLayout(Task(task[1], title, task[2]))         
+  
+  
+
+        
+  
         
         mainframe = QVBoxLayout()
-        #mainframe.addStretch()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignHCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
@@ -410,7 +512,8 @@ class ListWindow(QMainWindow):
             t = random.choice(tasklist)
             self.taskbox.addLayout(t) # type: ignore
             tasklist.remove(t)
-            
+    
+    
 
 class TaskInput(QLineEdit):
     def __init__(self):
@@ -551,7 +654,17 @@ class MainWindow(QMainWindow):
         self.refreshButton.setIcon(refresh_icon)
         self.refreshButton.pressed.connect(self.listbox.refresh)
         
+        import_icon = QIcon()
+        import_icon.addFile("_internal/resources/import_icon.png")
+        self.import_btn = TDButton("import")
+        self.import_btn.pressed.connect(self.importList)
+        self.import_btn.setObjectName("MenuButton")
+        self.import_btn.setFont(QFont(FONT_NAME, 16, 400))
+        self.import_btn.setIcon(import_icon)
+        
         self.mainHeader.addWidget(self.menu.new_btn, alignment= Qt.AlignmentFlag.AlignLeft)
+        self.mainHeader.addStretch()
+        self.mainHeader.addWidget(self.import_btn, alignment=Qt.AlignmentFlag.AlignRight)
         self.mainHeader.addWidget(self.refreshButton, alignment= Qt.AlignmentFlag.AlignRight)
         
         
@@ -603,5 +716,61 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(self.icon)
         
         self.setCentralWidget(self.cWidget)
+    
+    
+    def importList(self):
         
+        newDB, ok = QFileDialog.getOpenFileName(
+            self, 
+            "Select a File",
+            "imports\\",
+            "Lists (*db)"
+        )
+        
+        if newDB:
+            newDB = f"imports/{newDB.split("/")[-1]}"
+            newList = newDB.split("/")[-1].removesuffix(".db")
+            conn = sqlite3.connect(DB)
+            db_cursor = conn.cursor()
+            isNotImported = True
             
+            db_cursor.execute(f"""
+            --sql
+             SELECT name FROM sqlite_master WHERE TYPE='table'
+            ;
+            """)
+
+            for table in db_cursor.fetchall():
+                if table:
+                    if table[0] == newList:
+                        isNotImported = False
+            
+            
+            if isNotImported:
+                db_cursor.execute(f"""
+                --sql
+                ATTACH DATABASE "{newDB}" AS IMP
+                ;
+                """)
+                
+                db_cursor.execute(f"""
+                --sql
+                CREATE TABLE IF NOT EXISTS {newList} (
+                    task_id INTEGER PRIMARY KEY NOT NULL,
+                    task_text TEXT NOT NULL,
+                    checked BOOLEAN NOT NULL 
+                )
+                ;
+                """)
+                
+                db_cursor.execute(f"""
+                --sql
+                INSERT INTO {newList} SELECT * FROM IMP.{newList}
+                ;
+                """)
+            
+            conn.commit()
+            conn.close()
+            
+            self.listbox.refresh()            
+        

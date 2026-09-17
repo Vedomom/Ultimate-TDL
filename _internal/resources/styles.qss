@@ -120,3 +120,29 @@ QLineEdit:focus{
 }
 
 
+#ListExportButton{
+    border-radius: 1em;
+    background-color: dodgerblue;
+    padding: 0.5em 1em;
+    color: #252525;
+    icon-size: 2em;
+
+}
+
+#ListExportButton:hover{
+    background-color: lightblue;
+}
+
+#ListExportButton:pressed{
+    background-color: blue;
+}
+
+#WarningText{
+    color: red;
+    padding: 2em 2em;
+}
+
+#RegularText{
+    color: mintcream;
+    padding: 2em 2em;
+}
