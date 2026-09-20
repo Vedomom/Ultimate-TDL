@@ -3,10 +3,11 @@ import pathlib
 import random
 import sqlite3
 from PyQt6 import sip
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QIcon, QPixmap
-from PyQt6.QtWidgets import( QApplication, QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
-                            QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea, QFileDialog)
+from PyQt6.QtCore import QEvent, Qt, QSize, QEvent
+from PyQt6.QtGui import QFont, QIcon, QMouseEvent, QPixmap
+from PyQt6.QtWidgets import( QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
+                            QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea,
+                            QFileDialog, QToolButton, QStyle)
 
 
 FONT_NAME = "Bahnschrift"
@@ -87,6 +88,9 @@ class TDList(QHBoxLayout):
         self.list_window.show()
     
     def exportList(self):
+            if not os.path.exists("exports"):
+                os.mkdir("exports")
+                
             list_db = sqlite3.connect(f"exports/{self.title}.db")
             list_cursor = list_db.cursor()
             isNotExported = True
@@ -171,7 +175,9 @@ class ExportDialog(QDialog):
         self.mainframe.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
         
         self.setLayout(self.mainframe)
-        
+    
+
+  
 
     
 class MainMenu(QVBoxLayout):
@@ -244,6 +250,7 @@ class CreatNewListDialog(QDialog):
     def __init__(self, parent: QWidget, frame:ListFrame):
         super().__init__(parent)
         
+        self.setWindowTitle("Creat a New List")
         
         
         self.mainframe = QVBoxLayout()
@@ -384,13 +391,8 @@ class ListFrame(QVBoxLayout):
         conn = sqlite3.connect(DB)
         cursor = conn.cursor()
         
-        cursor.execute("""
-        --sql
-        SELECT name FROM sqlite_master WHERE TYPE= 'table'
-        ;
-        """)
         
-        listCount = len(cursor.fetchall())
+        listCount = self.count()
         lists = []
         for index in range(0, listCount):
             l = self.itemAt(index)
@@ -427,6 +429,11 @@ class ListWindow(QMainWindow):
         super().__init__()
 
         self.resize(600, 800)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowTitle(title)
+        
+        self.setObjectName("ListWindow")
         
         self.name = title
         self.frame = frame
@@ -444,6 +451,20 @@ class ListWindow(QMainWindow):
         self.taskbox = QVBoxLayout()
         self.task_input = TaskInput()
         self.mixButton = TDButton("mix")
+        self.titleBar = TitleBar(self)
+        self.titleBar.maximize_btn.setEnabled(True)
+        self.titleBar.maximize_btn.setStyleSheet("""
+            #Disabledutton{
+                background-color: #383838; 
+                border: 0.3px solid mintcream;
+                border-radius: 0.4em;
+                icon-size: 1.8em;
+            }
+            #DisabledButton:hover{
+                background-color: #454545;
+            }
+                                                 """)
+        
         
         self.taskbox.setObjectName("TaskBox")
         
@@ -476,6 +497,8 @@ class ListWindow(QMainWindow):
   
         
         mainframe = QVBoxLayout()
+        mainframe.addWidget(self.titleBar)
+        mainframe.addStretch()
         mainframe.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignHCenter)
         mainframe.addLayout(self.task_input.taskInputFrame)
         mainframe.addLayout(self.taskbox)
@@ -485,10 +508,11 @@ class ListWindow(QMainWindow):
         
         self.widget.setLayout(mainframe)
         
-        self.scrollarea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scrollarea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.scrollarea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scrollarea.setWidgetResizable(True)
         self.scrollarea.setWidget(self.widget)
+        self.scrollarea.setObjectName("Container")
         
         self.setCentralWidget(self.scrollarea)
         
@@ -561,6 +585,7 @@ class Task(QHBoxLayout):
 
         self.text.setFont(self.getBigFont())
         self.text.setWordWrap(True)
+        self.text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.checkTask()
         
@@ -639,21 +664,130 @@ class Task(QHBoxLayout):
         font.setPointSize(20)
         font.setWeight(300)
         font.setStrikeOut(True)
+        self.text.setObjectName("Checked")
+        self.text.setStyleSheet("""
+            #Checked{
+                color: lightgreen;
+            }
+                                """)
         return font
     
     def getBigFont(self):
         font = QFont(FONT_NAME)
         font.setPointSize(20)
         font.setWeight(600)
+        self.text.setObjectName("Unchecked")
+        self.text.setStyleSheet("""
+            #Unchecked{
+                color: mintcream;
+            }
+                                """)
         return font
     
+
+class TitleBar(QWidget):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setObjectName("TitleBar")
+        self.setAutoFillBackground(True)
+        self.initialPos = None
+        barLayout = QHBoxLayout()
+        barLayout.setSpacing(2)
+        self.title = QLabel(f"{self.__class__.__name__}", self)
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if title := parent.windowTitle():
+            self.title.setText(title)
+        self.title.setFont(QFont(FONT_NAME, 12, 500))
+        
+        self.wicon = QLabel()
+        self.wiconPM = QPixmap("_internal/resources/UTDL24.png")
+        self.wicon.setPixmap(self.wiconPM.scaled(20, 20))
+        barLayout.addWidget(self.wicon, alignment=Qt.AlignmentFlag.AlignLeft)
+        barLayout.addWidget(self.title, alignment=Qt.AlignmentFlag.AlignLeft)
+        
+        
+        self.minimize_btn = QToolButton(self)
+        min_icon = QIcon("_internal/resources/minus_icon.png") #type: ignore
+        self.minimize_btn.setIcon(min_icon)
+        self.minimize_btn.clicked.connect(self.window().showMinimized) #type: ignore
+        
+        self.maximize_btn = QToolButton(self)
+        max_icon = QIcon("_internal/resources/max_icon.png") #type: ignore
+        self.maximize_btn.setIcon(max_icon)
+        self.maximize_btn.clicked.connect(self.window().showMaximized) #type: ignore
+        self.maximize_btn.setEnabled(False)
+        
+        self.close_btn = QToolButton(self)
+        close_icon = QIcon("_internal/resources/close_icon.png") #type: ignore
+        self.close_btn.setIcon(close_icon)
+        self.close_btn.clicked.connect(self.window().close) #type: ignore
+        
+        self.normal_btn = QToolButton(self)
+        normal_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton) #type: ignore
+        self.normal_btn.setIcon(normal_icon)
+        self.normal_btn.clicked.connect(self.window().showNormal) #type: ignore
+        self.normal_btn.setVisible(False)
+        
+        buttons = [
+            self.minimize_btn,
+            self.normal_btn,
+            self.maximize_btn,
+            self.close_btn
+        ]
+        
+        barLayout.addStretch()
+        barLayout.addStretch()
+        for btn in buttons:
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            if btn.isEnabled():
+                btn.setObjectName("ToolButton")
+            else:
+                btn.setObjectName("DisabledToolButton")
+            barLayout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignTop)
+        
+        self.setLayout(barLayout)
+    
+    def windowStateChanged(self, state):
+        if state == Qt.WindowState.WindowMaximized:
+            self.normal_btn.setVisible(True)
+            self.maximize_btn.setVisible(False)
+        else:
+            self.normal_btn.setVisible(False)
+            self.maximize_btn.setVisible(True)
+    
+    def mousePressEvent(self, a0: QMouseEvent | None) -> None:
+        if a0.button() == Qt.MouseButton.LeftButton: #type: ignore
+            self.initialPos = a0.position().toPoint() #type: ignore    
+        super().mousePressEvent(a0)
+        a0.accept()  #type: ignore  
+    
+    def mouseMoveEvent(self, a0: QMouseEvent | None) -> None:
+        if self.initialPos is not None:
+            delta = a0.position().toPoint() - self.initialPos  #type: ignore   
+            self.window().move(          #type: ignore   
+                self.window().x() + delta.x(),   #type: ignore   
+                self.window().y() + delta.y()        #type: ignore   
+            )
+        super().mouseMoveEvent(a0) 
+        a0.accept()      #type: ignore   
+        
+    def mouseReleaseEvent(self, a0: QMouseEvent | None) -> None:
+        self.initialPos = None
+        super().mouseReleaseEvent(a0)
+        a0.accept()          #type: ignore   
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        self.setObjectName("MainWindow")
+        self.setWindowTitle("UTDL")
         self.resize(600, 400)
         self.setMaximumSize(600, 400)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        
         
         self.listbox = ListFrame(self)
         self.menu = MainMenu(self, self.listbox)
@@ -716,12 +850,18 @@ class MainWindow(QMainWindow):
         self.title.setObjectName("MainTitle")
         self.banner.setObjectName("Banner")
         
+        
         self.titleBox = QHBoxLayout()
         self.titleBox.addStretch()
         self.titleBox.addWidget(self.banner)
         self.titleBox.addWidget(self.title)
         self.titleBox.addStretch()
         
+        self.titleBar = TitleBar(self)
+        
+        self.titleBar.setStyleSheet("position:fixed; top:0;")
+        
+        self.mainframe.addWidget(self.titleBar)
         self.mainframe.addStretch()
         self.mainframe.addLayout(self.titleBox)
         self.mainframe.addStretch()
@@ -729,25 +869,32 @@ class MainWindow(QMainWindow):
         self.mainframe.addLayout(self.listContainer)
         
         self.cWidget = QWidget()
+        self.cWidget.setObjectName("Container")
         
         self.cWidget.setLayout(self.mainframe)
         
         self.setWindowIcon(self.icon)
         
         self.setCentralWidget(self.cWidget)
+
     
+    
+    def changeEvent(self, a0: QEvent | None) -> None:
+        if a0.type() == QEvent.Type.WindowStateChange: #type: ignore
+            self.titleBar.windowStateChanged(self.windowState())
+        super().changeEvent(a0)
+        a0.accept() #type: ignore
     
     def importList(self):
         
         newDB, ok = QFileDialog.getOpenFileName(
             self, 
             "Select a File",
-            "imports\\",
+            "",
             "Lists (*db)"
         )
         
         if newDB:
-            newDB = f"imports/{newDB.split("/")[-1]}"
             newList = newDB.split("/")[-1].removesuffix(".db")
             conn = sqlite3.connect(DB)
             db_cursor = conn.cursor()
@@ -763,6 +910,9 @@ class MainWindow(QMainWindow):
                 if table:
                     if table[0] == newList:
                         isNotImported = False
+                        dialog = ExportDialog(self, "This List Has Already Been Imported Before", True)
+                        dialog.show()
+                        dialog.exec()
             
             
             if isNotImported:
@@ -787,6 +937,12 @@ class MainWindow(QMainWindow):
                 INSERT INTO {newList} SELECT * FROM IMP.{newList}
                 ;
                 """)
+                
+                dialog_S = ExportDialog(self, "List Imported Successfully!")
+                dialog_S.show()
+                dialog_S.exec()
+
+                
             
             conn.commit()
             conn.close()

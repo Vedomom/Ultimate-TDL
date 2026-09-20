@@ -3,7 +3,7 @@
 }
 
 QMainWindow, QWidget{
-    background-color: #252525;
+    background-color: qlineargradient(x1:0 y1:0 , x2:1 y2:1, stop: 0 #252525 stop: 1 #151515);
     color: mintcream;
 }
 
@@ -146,3 +146,36 @@ QLineEdit:focus{
     color: mintcream;
     padding: 2em 2em;
 }
+
+
+
+#ToolButton{
+    background-color: #383838; 
+    border: 0.3px solid mintcream;
+    border-radius: 0.4em;
+    icon-size: 1.8em;
+}
+
+#ToolButton:hover{
+    background-color: #454545;
+}
+
+#DisabledToolButton{
+    background-color: #303030;
+    border: 0.3px solid #151515;
+    icon-size: 1.8em;
+}
+
+
+#Container{
+    border-radius: 0.7em;
+}
+
+QLabel{
+    background-color: transparent;
+}
+
+#ListWindow #Container{
+    border: none;
+}
+
