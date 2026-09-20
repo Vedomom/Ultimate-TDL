@@ -83,7 +83,7 @@ class TDList(QHBoxLayout):
     
     def openList(self):
         
-        self.list_window = ListWindow(self.title)
+        self.list_window = ListWindow(self.title, self.frame)
         self.list_window.show()
     
     def exportList(self):
@@ -381,25 +381,35 @@ class ListFrame(QVBoxLayout):
     
     def refresh(self):
         
-        listCount = self.count()
+        conn = sqlite3.connect(DB)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        --sql
+        SELECT name FROM sqlite_master WHERE TYPE= 'table'
+        ;
+        """)
+        
+        listCount = len(cursor.fetchall())
         lists = []
         for index in range(0, listCount):
             l = self.itemAt(index)
             lists.append(l)
         
         for list in lists:
-            for i in range(0, list.count()): # type: ignore
+            for i in range(0, list.count()): # type: ignore 
                 childWidget = list.itemAt(i).widget()# type: ignore
-                childWidget.deleteLater() # type: ignore
+                if childWidget != None:
+                    childWidget.deleteLater() # type: ignore
             sip.delete(list) # type: ignore
-        
-        conn = sqlite3.connect(DB)
-        cursor = conn.cursor()
+
         
         cursor.execute("""
+        --sql
         SELECT name FROM sqlite_master WHERE TYPE= 'table'
         ;
         """)
+        
         
         self.lists = [list[0] for list in cursor.fetchall()]
         self.lists.reverse()
@@ -408,18 +418,18 @@ class ListFrame(QVBoxLayout):
         conn.close()
         
         for list in self.lists:
-            
             tdl = TDList(list, self.p, self)
             self.addLayout(tdl)
 
 class ListWindow(QMainWindow):
     
-    def __init__(self, title: str):
+    def __init__(self, title: str, frame:ListFrame):
         super().__init__()
 
         self.resize(600, 800)
         
         self.name = title
+        self.frame = frame
         
         
         self.scrollarea = QScrollArea()
@@ -458,7 +468,7 @@ class ListWindow(QMainWindow):
         
               
         for task in tasklist:
-            self.taskbox.addLayout(Task(task[1], title, task[2]))         
+            self.taskbox.addLayout(Task(task[1], title, task[2], self.frame))         
   
   
 
@@ -485,7 +495,7 @@ class ListWindow(QMainWindow):
         
     def addTask(self):
         if not self.task_input.text() == "" and not self.task_input.text() == " ":
-            task = Task(self.task_input.text(), self.name, False)
+            task = Task(self.task_input.text(), self.name, False, self.frame)
             self.taskbox.addLayout(task)
             
             conn = sqlite3.connect(DB)
@@ -499,6 +509,10 @@ class ListWindow(QMainWindow):
             conn.commit()
             conn.close()
             self.task_input.clear()
+            taskcount = self.frame.children()[0].itemAt(2).widget() #type: ignore
+            newCount = int(taskcount.text().split(" ")[3]) + 1
+            taskcount.setText(f"- - - {newCount} Tasks - - -")
+            
         else:
             return
 
@@ -530,13 +544,14 @@ class TaskInput(QLineEdit):
     
 
 class Task(QHBoxLayout):
-    def __init__(self, text: str, title: str, checked: bool):
+    def __init__(self, text: str, title: str, checked: bool, frame: ListFrame):
         super().__init__()
         
         self.text = QLabel(text)
         self.checkbox = QCheckBox()
         self.delete_btn = QPushButton()
         self.list_title = title
+        self.frame = frame
         
         self.checked = checked
         
@@ -614,6 +629,10 @@ class Task(QHBoxLayout):
         self.checkbox.deleteLater()
         self.delete_btn.deleteLater()
         sip.delete(self)
+        
+        taskcount = self.frame.children()[0].itemAt(2).widget() #type: ignore
+        newCount = int(taskcount.text().split(" ")[3]) - 1
+        taskcount.setText(f"- - - {newCount} Tasks - - -")
     
     def getGrayFont(self):
         font = QFont(FONT_NAME)
