@@ -115,8 +115,10 @@ QLineEdit:focus{
 }
 
 .Heading{
-    margin-top: 2em;
+
+    color: qlineargradient(x1:100 y1:0 , x2:100 y2:80, stop: 0 dodgerblue stop: 1 cyan );
     margin-bottom: 1em;
+    
 }
 
 
@@ -153,6 +155,7 @@ QLineEdit:focus{
     background-color: #383838; 
     border: 0.3px solid mintcream;
     border-radius: 0.4em;
+    padding: 0% 0.5em;
     icon-size: 1.8em;
 }
 
@@ -163,6 +166,8 @@ QLineEdit:focus{
 #DisabledToolButton{
     background-color: #303030;
     border: 0.3px solid #151515;
+    border-radius: 0.4em;
+    padding: 0% 0.5em;
     icon-size: 1.8em;
 }
 
