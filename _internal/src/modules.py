@@ -745,6 +745,10 @@ class TitleBar(QWidget):
                 btn.setObjectName("DisabledToolButton")
             barLayout.addWidget(btn, alignment=Qt.AlignmentFlag.AlignTop)
         
+        barLayout.setContentsMargins(0,0,0,0)
+        
+    
+        
         self.setLayout(barLayout)
     
     def windowStateChanged(self, state):
@@ -859,7 +863,8 @@ class MainWindow(QMainWindow):
         
         self.titleBar = TitleBar(self)
         
-        self.titleBar.setStyleSheet("position:fixed; top:0;")
+        
+        
         
         self.mainframe.addWidget(self.titleBar)
         self.mainframe.addStretch()
