@@ -487,7 +487,13 @@ class ListWindow(QMainWindow):
         
         self.setCentralWidget(self.scrollarea)
         
-        
+    
+    def changeEvent(self, a0: QEvent | None) -> None:
+        if a0.type() == QEvent.Type.WindowStateChange: #type: ignore
+            self.titleBar.windowStateChanged(self.windowState())
+        super().changeEvent(a0)
+        a0.accept()    #type:ignore
+    
     def addTask(self):
         if not self.task_input.text() == "" and not self.task_input.text() == " ":
             task = Task(self.task_input.text(), self.name, False, self.frame)
@@ -744,7 +750,8 @@ class TitleBar(QWidget):
         self.close_btn.clicked.connect(self.window().close) #type: ignore
         
         self.normal_btn = QToolButton(self)
-        normal_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton) #type: ignore
+        normal_icon = QIcon() #type: ignore
+        normal_icon.addFile("_internal/resources/normal-icon.png")
         self.normal_btn.setIcon(normal_icon)
         self.normal_btn.clicked.connect(self.window().showNormal) #type: ignore
         self.normal_btn.setVisible(False)
