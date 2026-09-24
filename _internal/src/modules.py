@@ -3,8 +3,9 @@ import pathlib
 import random
 import sqlite3
 from PyQt6 import sip
-from PyQt6.QtCore import QEvent, Qt, QSize, QEvent
-from PyQt6.QtGui import QFont, QIcon, QMouseEvent, QPixmap
+from PyQt6.QtCore import QEvent, Qt, QSize, QEvent, QVariantAnimation, QEasingCurve
+from PyQt6.QtCore import QObject, pyqtProperty #type:ignore
+from PyQt6.QtGui import QFont, QIcon, QMouseEvent, QPixmap, QColor
 from PyQt6.QtWidgets import( QWidget, QLabel, QPushButton, QMainWindow, QLineEdit , 
                             QHBoxLayout, QVBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QScrollArea,
                             QFileDialog, QToolButton, QStyle)
@@ -178,36 +179,6 @@ class ExportDialog(QDialog):
     
 
   
-
-    
-class MainMenu(QVBoxLayout):
-    
-    def __init__(self, window : QWidget, frame:ListFrame):
-        super().__init__()
-        
-        self.window = window
-        self.new_btn = TDButton("new")  
-        file_icon = QIcon()
-        file_icon.addFile("_internal/resources/file_icon.png")
-        self.new_btn.setIcon(file_icon)
-
-        
-        self.new_btn.pressed.connect(self.creatList)
-        
-        self.frame = frame
-        
-        
-        self.buttonList = [self.new_btn]
-        for b in self.buttonList:
-            self.addWidget(b)
-            b.setObjectName("MenuButton")
-            
-        self.setSpacing(2)
-        
-    def creatList(self):
-        self.dialog_CNL = CreatNewListDialog(self.window, self.frame)
-        self.dialog_CNL.show()
-        self.dialog_CNL.exec()
 
 class DeleteListDialog(QDialog):
     def __init__(self, parent: QWidget | None, tdlist: TDList, listframe: ListFrame):
@@ -565,9 +536,12 @@ class TaskInput(QLineEdit):
         self.taskInputFrame.addStretch()
         self.taskInputFrame.addWidget(self, alignment=Qt.AlignmentFlag.AlignCenter)
         self.taskInputFrame.addWidget(self.add_btn, alignment=Qt.AlignmentFlag.AlignCenter)
-    
+
+
 
 class Task(QHBoxLayout):
+    
+    
     def __init__(self, text: str, title: str, checked: bool, frame: ListFrame):
         super().__init__()
         
@@ -576,6 +550,12 @@ class Task(QHBoxLayout):
         self.delete_btn = QPushButton()
         self.list_title = title
         self.frame = frame
+        
+
+        self.titleSizeAnimation = QVariantAnimation(self.text)
+        self.titleColorAnimation = QVariantAnimation(self.text)
+        
+        
         
         self.checked = checked
         
@@ -595,16 +575,48 @@ class Task(QHBoxLayout):
         self.delete_btn.pressed.connect(self.deleteTask)
         self.delete_btn.setObjectName("TaskDeleteButton")
         
+        #animation
+
+        self.titleSizeAnimation.setEasingCurve(QEasingCurve().Type.OutBounce)
+        self.titleSizeAnimation.setDuration(250)
+        self.titleSizeAnimation.setKeyValueAt(0, self.getBigFont().pointSize())
+        self.titleSizeAnimation.setKeyValueAt(0.5, 24)
+        self.titleSizeAnimation.setKeyValueAt(1, self.getBigFont().pointSize())
+        self.titleSizeAnimation.valueChanged.connect(self.updateTitleFontSize)
+        
+
+        self.titleColorAnimation.setEasingCurve(QEasingCurve.Type.BezierSpline)
+        self.titleColorAnimation.setDuration(300)
+        self.titleColorAnimation.setStartValue(QColor(245, 255, 250, 255))
+        self.titleColorAnimation.setEndValue(QColor(144, 238, 144, 255))
+        self.titleColorAnimation.valueChanged.connect(self.updateTitleColor)
+        
+        
+        
         self.addStretch()
         self.addWidget(self.text, alignment=Qt.AlignmentFlag.AlignRight)
         self.addWidget(self.checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
         self.addWidget(self.delete_btn, alignment=Qt.AlignmentFlag.AlignLeft)
         self.addStretch()
         
+    
+    def updateTitleFontSize(self, value):
+        self.text.setFont(QFont(FONT_NAME, value, 600))
+    
+    def updateTitleColor(self, color: QColor):
+        self.text.setStyleSheet(f"color: rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()});")
+        
+    
         
     def checkTask(self):
         if self.checkbox.isChecked():
-            self.text.setFont(self.getGrayFont())
+            self.titleColorAnimation.setDirection(self.titleColorAnimation.Direction.Forward)
+            if self.titleSizeAnimation.state() == QVariantAnimation.State.Stopped:
+                self.titleSizeAnimation.start()
+                
+            if self.titleColorAnimation.state() == QVariantAnimation.State.Stopped:
+                self.titleColorAnimation.start()
+            
             conn = sqlite3.connect(DB)
             cursor = conn.cursor()
             
@@ -619,6 +631,13 @@ class Task(QHBoxLayout):
             conn.commit()
             conn.close()
         else:
+            self.titleColorAnimation.setDirection(self.titleColorAnimation.Direction.Backward)
+            if self.titleSizeAnimation.state() == QVariantAnimation.State.Stopped:
+                self.titleSizeAnimation.start()
+                
+            if self.titleColorAnimation.state() == QVariantAnimation.State.Stopped:
+                self.titleColorAnimation.start()
+            
             self.checked = False
             
             conn = sqlite3.connect(DB)
@@ -635,7 +654,7 @@ class Task(QHBoxLayout):
             conn.commit()
             conn.close()
             
-            self.text.setFont(self.getBigFont())
+            
     
     def deleteTask(self):
         
@@ -658,6 +677,8 @@ class Task(QHBoxLayout):
         taskcount = self.frame.children()[0].itemAt(2).widget() #type: ignore
         newCount = int(taskcount.text().split(" ")[3]) - 1
         taskcount.setText(f"- - - {newCount} Tasks - - -")
+    
+    
     
     def getGrayFont(self):
         font = QFont(FONT_NAME)
@@ -794,7 +815,15 @@ class MainWindow(QMainWindow):
         
         
         self.listbox = ListFrame(self)
-        self.menu = MainMenu(self, self.listbox)
+        
+        self.new_btn = TDButton("new")  
+        file_icon = QIcon()
+        file_icon.addFile("_internal/resources/file_icon.png")
+        self.new_btn.setIcon(file_icon)
+        self.new_btn.setObjectName("MenuButton")
+
+        
+        self.new_btn.pressed.connect(self.creatList)
 
         self.mainframe = QVBoxLayout()
         self.listContainer = QVBoxLayout()
@@ -819,7 +848,7 @@ class MainWindow(QMainWindow):
         self.import_btn.setFont(QFont(FONT_NAME, 16, 400))
         self.import_btn.setIcon(import_icon)
         
-        self.mainHeader.addWidget(self.menu.new_btn, alignment= Qt.AlignmentFlag.AlignLeft)
+        self.mainHeader.addWidget(self.new_btn, alignment= Qt.AlignmentFlag.AlignLeft)
         self.mainHeader.addStretch()
         self.mainHeader.addWidget(self.import_btn, alignment=Qt.AlignmentFlag.AlignRight)
         self.mainHeader.addWidget(self.refreshButton, alignment= Qt.AlignmentFlag.AlignRight)
@@ -890,6 +919,11 @@ class MainWindow(QMainWindow):
         super().changeEvent(a0)
         a0.accept() #type: ignore
     
+    def creatList(self):
+        self.dialog_CNL = CreatNewListDialog(self, self.listbox)
+        self.dialog_CNL.show()
+        self.dialog_CNL.exec()
+    
     def importList(self):
         
         newDB, ok = QFileDialog.getOpenFileName(
@@ -952,5 +986,6 @@ class MainWindow(QMainWindow):
             conn.commit()
             conn.close()
             
-            self.listbox.refresh()            
+            self.listbox.refresh()     
+       
         
